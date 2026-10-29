@@ -1,0 +1,16 @@
+import {irishHolidays,today,date,weekOf,hours} from './pay.js';
+const KEY='shift-pay-tracker:v1';
+export const initial=()=>({version:1,rates:[{id:'default',name:'My part-time job',amount:14.15,currency:'EUR'}],shifts:[],payouts:[],rules:{sunday:{kind:'multiplier',value:1.5},holiday:{kind:'multiplier',value:2},holidays:irishHolidays(Number(today().slice(0,4)))}});
+const assert=(condition,message)=>{if(!condition)throw Error(message);};
+const number=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
+const text=s=>typeof s==='string'&&s.length>0&&s.length<=200;
+const currency=s=>['EUR','GBP','USD','CAD','AUD'].includes(s);
+export function validate(data){assert(data?.version===1,'Unsupported backup version'); for(const key of ['rates','shifts','payouts']){assert(Array.isArray(data[key])&&data[key].length<=50000,`Invalid ${key}`); const ids=data[key].map(x=>x.id);assert(ids.every(text)&&new Set(ids).size===ids.length,'Invalid or duplicate IDs');}
+for(const r of data.rates)assert(text(r.name)&&number(r.amount)&&r.amount>0&&currency(r.currency),'Invalid rate');
+for(const s of data.shifts){assert(text(s.name),'Invalid shift'); date(s.date);hours(s.start,s.end,s.breakMinutes);const p=s.pay;assert(p&&number(p.hours)&&p.hours>0&&p.hours<=24&&[p.base,p.extra,p.total].every(n=>Number.isSafeInteger(n)&&n>=0)&&p.base+p.extra===p.total,'Invalid pay snapshot');assert(p.rate&&text(p.rate.name)&&number(p.rate.amount)&&p.rate.amount>0&&currency(p.rate.currency)&&Array.isArray(p.labels)&&p.labels.every(text),'Invalid saved rate');}
+for(const p of data.payouts){date(p.date);assert(weekOf(p.week)===p.week&&currency(p.currency)&&Number.isSafeInteger(p.amount)&&p.amount>=0&&typeof p.notes==='string'&&p.notes.length<=2000,'Invalid payout');}
+for(const key of ['sunday','holiday']){const r=data.rules?.[key];assert(r&&['flat','multiplier'].includes(r.kind)&&number(r.value)&&(r.kind!=='multiplier'||r.value>=1),'Invalid bonus rule');}assert(Array.isArray(data.rules.holidays)&&data.rules.holidays.length<=1000,'Invalid holidays');for(const h of data.rules.holidays){date(h.date);assert(text(h.name),'Invalid holiday');}return data;}
+// Replace this adapter with an authenticated remote repository to introduce cloud sync.
+export const repository={load(){const raw=localStorage.getItem(KEY);return raw?validate(JSON.parse(raw)):initial();},save(data){validate(data);localStorage.setItem(KEY,JSON.stringify(data));}};
+export function download(name,body,type){const url=URL.createObjectURL(new Blob([body],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export function csv(data){const cell=v=>'"'+String(v??'').replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';return '\uFEFF'+[['Type','Name / notes','Date','Week','Start','End','Break minutes','Hours','Currency','Hourly rate','Base','Extra','Estimated / actual','Bonus'],...data.shifts.map(s=>['Shift',s.name,s.date,weekOf(s.date),s.start,s.end,s.breakMinutes,s.pay.hours,s.pay.rate.currency,s.pay.rate.amount,s.pay.base/100,s.pay.extra/100,s.pay.total/100,s.pay.labels.join('; ')]),...data.payouts.map(p=>['Payout',p.notes,p.date,p.week,'','','','',p.currency,'','','',p.amount/100,''])].map(row=>row.map(cell).join(',')).join('\r\n');}
