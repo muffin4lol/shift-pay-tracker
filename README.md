@@ -159,3 +159,10 @@ The `repository` interface in `src/storage.js` owns persistence. Keep `pay.js` p
 ## Verification and release status
 
 The accompanying DELIVERY.md records the checks completed in this environment and any publishing limitations. A production build and automated utility tests do not replace a device/browser acceptance test for your own work pattern.
+
+
+## Add a weekly roster in one go
+
+Select **Add week** beside Add shift. Choose any date in the roster week (normalized to Monday–Sunday), enter the job name and hourly rate, then tick working days. Monday–Friday are selected initially; use All days or Clear as needed. Set common start/end/break values and choose **Apply to selected days**, then adjust individual days. Review the per-day pay and weekly total and choose **Save shifts**.
+
+The entire batch is validated and saved in one browser-storage write. Any invalid selected day prevents partial saving. An entry with the same job name (ignoring case), date, start and end is treated as an existing shift: deselect that day or edit the original. Existing shifts are preserved. Overnight hours, unpaid breaks, bonuses and frozen rate snapshots follow the single-shift rules. You can edit or delete each saved day afterwards. Use a separate batch for another job/rate. The weekly view opens on the saved week and its currency.
