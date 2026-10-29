@@ -1,5 +1,9 @@
 # Shift Pay Tracker
 
+Live app: https://muffin4lol.github.io/shift-pay-tracker/
+
+Source repository: https://github.com/muffin4lol/shift-pay-tracker
+
 A responsive React + Vite + Tailwind app for tracking shifts, estimated gross earnings and actual payouts. Local-only data, no backend, no analytics. Features: multiple named hourly rates and currencies, frozen pay snapshots, overnight shifts, breaks, special-day rules, Monday–Sunday summaries, reconciliation, eight-week chart, light/dark mode, CSV and versioned JSON backups.
 
 ## Start locally
