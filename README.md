@@ -1,10 +1,12 @@
 # Shift Pay Tracker
 
+**Phase 2 adds accounts, admin whitelisting, profiles and persistent preferences.** See [PHASE2.md](PHASE2.md) for the schema, APIs and setup details. Account-enabled deployments require the public Supabase project configuration in GitHub Actions variables. Financial records remain local to each browser and signed-in user.
+
 Live app: https://muffin4lol.github.io/shift-pay-tracker/
 
 Source repository: https://github.com/muffin4lol/shift-pay-tracker
 
-A responsive React + Vite + Tailwind app for tracking shifts, estimated gross earnings and actual payouts. Local-only data, no backend, no analytics. Features: multiple named hourly rates and currencies, frozen pay snapshots, overnight shifts, breaks, special-day rules, Monday–Sunday summaries, reconciliation, eight-week chart, light/dark mode, CSV and versioned JSON backups.
+A responsive React + Vite + Tailwind app for tracking shifts, estimated gross earnings and actual payouts. Browser-local earnings, optional Supabase accounts/profile/preferences, no analytics. Features: multiple named hourly rates and currencies, frozen pay snapshots, overnight shifts, breaks, special-day rules, Monday–Sunday summaries, reconciliation, eight-week chart, light/dark mode, CSV and versioned JSON backups.
 
 ## Start locally
 
@@ -145,11 +147,13 @@ Official references: https://vite.dev/guide/static-deploy#github-pages and https
 
 ## Backend migration
 
+Phase 2 now implements Supabase Auth, profiles and settings; see PHASE2.md. Financial record sync remains a future migration.
+
 The `repository` interface in `src/storage.js` owns persistence. Keep `pay.js` pure. To add Supabase/Firebase, replace load/save with an async repository, introduce loading/error handling, authenticate users and enforce per-user row security. Preserve versioned snapshots, validate remote data, resolve concurrent edits and provide migration from JSON. Never use a service-role key in frontend code.
 
 ## Future improvements
 
-- Login, encrypted backups and cloud sync with per-user access controls.
+- Encrypted backups and cloud sync for financial shift records with per-user access controls.
 - Tax and pension estimates configured for the user's circumstances.
 - PDF payslip exports and attachment support.
 - Overtime rules and split-at-midnight premiums.
