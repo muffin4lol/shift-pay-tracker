@@ -11,6 +11,11 @@ for(const s of data.shifts){assert(text(s.name),'Invalid shift'); date(s.date);h
 for(const p of data.payouts){date(p.date);assert(weekOf(p.week)===p.week&&currency(p.currency)&&Number.isSafeInteger(p.amount)&&p.amount>=0&&typeof p.notes==='string'&&p.notes.length<=2000,'Invalid payout');}
 for(const key of ['sunday','holiday']){const r=data.rules?.[key];assert(r&&['flat','multiplier'].includes(r.kind)&&number(r.value)&&(r.kind!=='multiplier'||r.value>=1),'Invalid bonus rule');}assert(Array.isArray(data.rules.holidays)&&data.rules.holidays.length<=1000,'Invalid holidays');for(const h of data.rules.holidays){date(h.date);assert(text(h.name),'Invalid holiday');}return data;}
 // Replace this adapter with an authenticated remote repository to introduce cloud sync.
-export const repository={load(){const raw=localStorage.getItem(KEY);return raw?validate(JSON.parse(raw)):initial();},save(data){validate(data);localStorage.setItem(KEY,JSON.stringify(data));}};
+export function repositoryFor(userId = null, storage = localStorage) {
+  const key = userId ? `${KEY}:user:${userId}` : KEY;
+  return {exists(){return storage.getItem(key)!==null;},load(){const raw=storage.getItem(key);return raw?validate(JSON.parse(raw)):initial();},
+    save(data){validate(data);storage.setItem(key,JSON.stringify(data));}};
+}
+export const repository={load(){return repositoryFor().load();},save(data){return repositoryFor().save(data);}};
 export function download(name,body,type){const url=URL.createObjectURL(new Blob([body],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 export function csv(data){const cell=v=>'"'+String(v??'').replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';return '\uFEFF'+[['Type','Name / notes','Date','Week','Start','End','Break minutes','Hours','Currency','Hourly rate','Base','Extra','Estimated / actual','Bonus'],...data.shifts.map(s=>['Shift',s.name,s.date,weekOf(s.date),s.start,s.end,s.breakMinutes,s.pay.hours,s.pay.rate.currency,s.pay.rate.amount,s.pay.base/100,s.pay.extra/100,s.pay.total/100,s.pay.labels.join('; ')]),...data.payouts.map(p=>['Payout',p.notes,p.date,p.week,'','','','',p.currency,'','','',p.amount/100,''])].map(row=>row.map(cell).join(',')).join('\r\n');}
