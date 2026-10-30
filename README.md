@@ -1,3 +1,7 @@
+# Phase 3 update
+
+Cloud workspace sync and Irish 2026 tax estimates are implemented. **Apply the new SQL migration before deploying this release.** See [PHASE3.md](PHASE3.md) for the storage audit, setup, assumptions, sources and two-device acceptance test. Older local-only descriptions below describe Phase 1/2 behavior.
+
 # Shift Pay Tracker
 
 **Phase 2 adds accounts, admin whitelisting, profiles and persistent preferences.** See [PHASE2.md](PHASE2.md) for the schema, APIs and setup details. Account-enabled deployments require the public Supabase project configuration in GitHub Actions variables. Financial records remain local to each browser and signed-in user.

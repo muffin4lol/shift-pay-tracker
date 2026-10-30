@@ -1,6 +1,7 @@
 import React,{createContext,useContext,useEffect,useRef,useState} from 'react';
 import {supabase,configured,configurationError,rpc} from './client';
 import {defaults,validatePreferences,validateProfile,accessError} from './model';
+import {accountQueue} from './pending';
 const AccountContext = createContext(null);
 export const useAccount=()=>useContext(AccountContext);
 
@@ -8,9 +9,12 @@ export function AccountProvider({children}) {
   const [session,setSession]=useState(null),[account,setAccount]=useState(null);
   const [loading,setLoading]=useState(configured),[error,setError]=useState(configurationError||'');
   const [recovery,setRecovery]=useState(false);
+  const [syncMessage,setSyncMessage]=useState('');
+  const replaying=useRef(false);
   const generation=useRef(0), current=useRef(null);
-  const settingsQueue=useRef(Promise.resolve());
+  
   const apply=value=>{current.current=value;setAccount(value);};
+  const withPending=value=>{const pending=accountQueue(localStorage,value.profile.user_id).read();return {...value,profile:{...value.profile,...pending.profile?.value},settings:{...value.settings,preferences:{...value.settings.preferences,...pending.settings?.value}}};};
   async function loadAccount(nextSession) {
     const request=++generation.current;
     setSession(nextSession);
@@ -21,7 +25,7 @@ export function AccountProvider({children}) {
     try{
       const result=await rpc('account_bootstrap');
       if(request!==generation.current)return;
-      apply(result);setError('');
+      apply(withPending(result));setError('');
     }catch(e){
       if(request!==generation.current)return;
       apply(null);setError(accessError(e));
@@ -46,8 +50,8 @@ export function AccountProvider({children}) {
       const snapshot=current.current;
       try{
         const next=await rpc('account_bootstrap');
-        if(!stopped&&current.current===snapshot&&session.user.id===next.profile.user_id)apply(next);
-      }catch(e){if(!stopped){apply(null);setError(accessError(e));}}
+        if(!stopped&&current.current===snapshot&&session.user.id===next.profile.user_id&&!Object.keys(accountQueue(localStorage,session.user.id).read()).length)apply(next);
+      }catch(e){if(!stopped){if(['42501','PGRST301','PGRST302'].includes(e.code)||e.status===401||e.status===403){apply(null);setError(accessError(e));}else setSyncMessage('Account connection unavailable. Cached profile remains visible; retry when online.');}}
     }
     // Revocation is immediate at the DB. Recheck removes already-rendered UI within 60s.
     const timer=setInterval(recheck,60000);
@@ -55,29 +59,32 @@ export function AccountProvider({children}) {
     return()=>{stopped=true;clearInterval(timer);window.removeEventListener('focus',recheck);};
   },[session?.user.id]);
   async function signOut(){++generation.current;apply(null);setSession(null);setRecovery(false);setError('');await supabase?.auth.signOut({scope:'local'});}
-  async function saveProfile(profile){
-    const origin=current.current;const clean=validateProfile(profile);
-    const result=await rpc('update_profile',{p_display_name:clean.display_name,p_avatar_url:clean.avatar_url,p_bio:clean.bio,p_expected_version:origin.profile.version});
-    if(current.current?.profile.user_id===origin.profile.user_id)apply({...current.current,profile:result});
-    return result;
+  async function replayPending(){
+    const origin=current.current;if(!origin||replaying.current)return;
+    const identity=origin.profile.user_id,queue=accountQueue(localStorage,identity);replaying.current=true;
+    try{for(const kind of ['profile','settings']){const pending=queue.read();const item=pending[kind];if(!item)continue;
+      setSyncMessage('Saving account changes…');
+      const result=kind==='profile'?await rpc('update_profile',{p_display_name:item.value.display_name,p_avatar_url:item.value.avatar_url,p_bio:item.value.bio,p_expected_version:item.version}):await rpc('patch_settings',{p_preferences:item.value,p_expected_version:item.version});
+      const latest=queue.read();if(latest[kind]?.token===item.token){delete latest[kind];queue.write(latest);}
+      else if(latest[kind]){latest[kind].version=result.version;queue.write(latest);}
+      if(current.current?.profile.user_id===identity)apply(withPending({...current.current,[kind]:result}));
+    }setSyncMessage(Object.keys(queue.read()).length?'Changes queued. Retry account sync.':'Account saved to cloud');
+    }catch(e){setSyncMessage(e.code==='PT409'?'Newer account data exists. Download queued changes, then reload before retrying.':'Failed to save account (retry). '+e.message);throw e;}
+    finally{replaying.current=false;}
   }
-  function savePreferences(patch){
-    validatePreferences(patch);
-    // Serialize this tab's writes; DB version checks catch other-tab/device conflicts.
-    const identity=current.current?.profile.user_id;
-    const operation=settingsQueue.current.catch(()=>{}).then(async()=>{
-      const origin=current.current;
-      if(!origin||origin.profile.user_id!==identity)throw Error('Account changed. Please retry.');
-      const result=await rpc('patch_settings',{p_preferences:patch,p_expected_version:origin.settings.version});
-      if(current.current?.profile.user_id===identity)apply({...current.current,settings:result});
-      return result;
-    });
-    settingsQueue.current=operation;
-    return operation;
+  function queueChange(kind,value){const origin=current.current;if(!origin)throw Error('Sign in first.');const queue=accountQueue(localStorage,origin.profile.user_id),pending=queue.read();
+    pending[kind]={value:kind==='settings'?{...pending.settings?.value,...value}:value,version:pending[kind]?.version??origin[kind].version,token:crypto.randomUUID()};queue.write(pending);
+    // Show edits immediately; the queue preserves the server version for safe replay.
+    apply({...origin,[kind]:kind==='profile'?{...origin.profile,...value}:{...origin.settings,preferences:{...origin.settings.preferences,...value}}});
+    setSyncMessage('Saving account changes…');void replayPending().catch(()=>{});return Promise.resolve();
   }
+  function saveProfile(profile){return queueChange('profile',validateProfile(profile));}
+  function savePreferences(patch){validatePreferences(patch);return queueChange('settings',patch);}
+  useEffect(()=>{if(!session?.user.id)return;const retry=()=>void replayPending().catch(()=>{});window.addEventListener('online',retry);const timer=setInterval(retry,30000);retry();return()=>{clearInterval(timer);window.removeEventListener('online',retry);};},[session?.user.id,!!account]);
+  function discardPending(){if(!current.current)return;accountQueue(localStorage,current.current.profile.user_id).clear();setSyncMessage('');return loadAccount(session);}
   return <AccountContext.Provider value={{enabled:configured,configurationError,session,account,loading,error,recovery,setRecovery,
     profile:account?.profile,preferences:{...defaults,...account?.settings.preferences},role:account?.access.role,
-    saveProfile,savePreferences,signOut,reload:()=>loadAccount(session)}}>{children}</AccountContext.Provider>;
+    saveProfile,savePreferences,syncMessage,retryAccount:replayPending,discardPending,signOut,reload:()=>loadAccount(session)}}>{children}</AccountContext.Provider>;
 }
 
 export function AccountGate({children}) {
