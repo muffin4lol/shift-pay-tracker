@@ -16,6 +16,7 @@ test('PostgreSQL account authorization and persistence',async t=>{
       grant execute on function auth.uid() to authenticated,anon;
       grant select on auth.users to supabase_auth_admin;`);
     await db.exec(await readFile(new URL('../supabase/migrations/202610290001_accounts.sql',import.meta.url),'utf8'));
+    await db.exec(await readFile(new URL('../supabase/migrations/202610300001_workspace.sql',import.meta.url),'utf8'));
     for(const [name,id] of Object.entries(ids))await db.query('insert into auth.users values($1,$2,$3)',[id,`${name}@example.com`,name==='unverified'?null:new Date().toISOString()]);
     const bootstrap=await readFile(new URL('../supabase/bootstrap-admin.sql',import.meta.url),'utf8');
     await assert.rejects(()=>db.exec(bootstrap),/Replace REPLACE_WITH_YOUR_EMAIL/);
@@ -71,6 +72,21 @@ test('PostgreSQL account authorization and persistence',async t=>{
       await reject('select public.patch_settings($1::jsonb,3)',[JSON.stringify({big:'x'.repeat(17000)})],/16 KB/);
       assert.equal((await account()).settings.version,3);
     });
+    await t.test('workspace cloud writes survive another client, CAS rejects conflicts, RLS isolates and revocation blocks',async()=>{
+      const payload={version:1,rates:[],shifts:[],payouts:[],rules:{},tax:{test:1}};
+      await as('authenticated',ids.bob);await account();
+      const saved=await call('select public.save_workspace($1::jsonb,0) as value',[JSON.stringify(payload)]);assert.equal(saved.version,1);
+      await as('authenticated',ids.alice);assert.equal(await call('select public.load_workspace() as value'),null);
+      assert.equal((await db.query('select * from public.workspaces')).rows.length,0);
+      await reject('update public.workspaces set version=999',[],/permission denied/);
+      await as('authenticated',ids.bob);const loaded=await call('select public.load_workspace() as value');assert.deepEqual(loaded.payload,payload);
+      await assert.rejects(()=>db.query('select public.save_workspace($1::jsonb,0)',[JSON.stringify(payload)]),{code:'PT409'});
+      const next=await call('select public.save_workspace($1::jsonb,1) as value',[JSON.stringify(payload)]);assert.equal(next.version,2);
+      await as('authenticated',ids.admin);await account();await call("select public.admin_set_access('bob@example.com','user',false) as value");
+      await as('authenticated',ids.bob);await reject('select public.load_workspace()',[],/Access restricted/);await reject('select public.save_workspace($1::jsonb,2)',[JSON.stringify(payload)],/Access restricted/);
+      assert.equal((await db.query('select * from public.workspaces')).rows.length,0);
+      await as('authenticated',ids.admin);await call("select public.admin_set_access('bob@example.com','user',true) as value");await as('authenticated',ids.alice);
+    });
     await t.test('database mutation rate limits return an HTTP 429 SQLSTATE',async()=>{
       let a=await account();let hit=false;
       for(let i=0;i<62;i++){
@@ -82,7 +98,7 @@ test('PostgreSQL account authorization and persistence',async t=>{
     await t.test('admin adds normalized email access, binds IDs and creates audit events',async()=>{
       await as('authenticated',ids.admin);await account();
       const r=await call("select public.admin_set_access(' OUTSIDER@EXAMPLE.COM ','user',true) as value");assert.equal(r.email,'outsider@example.com');assert.equal(r.user_id,ids.outsider);
-      const audit=await call('select public.admin_audit() as value');assert.equal(audit.length,2);assert.equal(audit[0].actor_id,ids.admin);
+      const audit=await call('select public.admin_audit() as value');assert.ok(audit.length>=2);assert.equal(audit[0].actor_id,ids.admin);
       const list=await call('select public.admin_list_access(0,100) as value');assert.equal(list.length,5);
       await reject('select public.admin_list_access(0,1000)',[],/Invalid pagination/);
     });
