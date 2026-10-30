@@ -1,0 +1,173 @@
+{
+  "year": 2026,
+  "validUntil": "2026-12-31",
+  "reviewAfter": "2026-12-31",
+  "paye": {
+    "standard": {
+      "value": 0.2,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "higher": {
+      "value": 0.4,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "singleBand": {
+      "value": 44000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "marriedBand": {
+      "value": 53000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "secondIncomeMax": {
+      "value": 35000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "personalSingle": {
+      "value": 2000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "personalMarried": {
+      "value": 4000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "employeeCredit": {
+      "value": 2000,
+      "source": "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      "lastVerified": "2026-10-30"
+    }
+  },
+  "usc": {
+    "bands": {
+      "value": [
+        [
+          12012,
+          0.005
+        ],
+        [
+          28700,
+          0.02
+        ],
+        [
+          70044,
+          0.03
+        ],
+        [
+          null,
+          0.08
+        ]
+      ],
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/usc/standard-rates-thresholds.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "exemption": {
+      "value": 13000,
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/usc/index.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "reducedLimit": {
+      "value": 60000,
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/usc/reduced-rates.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "reducedAge": {
+      "value": 70,
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/usc/reduced-rates.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "reducedBands": {
+      "value": [
+        [
+          12012,
+          0.005
+        ],
+        [
+          null,
+          0.02
+        ]
+      ],
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/usc/reduced-rates.aspx",
+      "lastVerified": "2026-10-30"
+    },
+    "emergencyRate": {
+      "value": 0.08,
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/emergency-tax/emergency-tax-rules.aspx",
+      "lastVerified": "2026-10-30"
+    }
+  },
+  "prsi": {
+    "rates": {
+      "value": [
+        [
+          "2026-01-01",
+          0.042
+        ],
+        [
+          "2026-10-01",
+          0.0435
+        ]
+      ],
+      "source": "https://www.gov.ie/en/department-of-social-protection/publications/prsi-class-a-rates/",
+      "lastVerified": "2026-10-30"
+    },
+    "minAge": {
+      "value": 16,
+      "source": "https://www.gov.ie/en/department-of-social-protection/publications/prsi-class-a-rates/",
+      "lastVerified": "2026-10-30"
+    },
+    "maxAge": {
+      "value": 70,
+      "source": "https://www.gov.ie/en/department-of-social-protection/publications/prsi-class-a-rates/",
+      "lastVerified": "2026-10-30"
+    },
+    "classJBelow": {
+      "value": 38,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "freeWeekly": {
+      "value": 352,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "creditStart": {
+      "value": 352.01,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "creditEnd": {
+      "value": 424,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "maxCredit": {
+      "value": 12,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "taperDivisor": {
+      "value": 6,
+      "source": "https://www.citizensinformation.ie/en/social-welfare/irish-social-welfare-system/social-insurance-prsi/social-insurance-classes/",
+      "lastVerified": "2026-10-30"
+    },
+    "subclassALMax": {
+      "value": 552,
+      "source": "https://www.gov.ie/en/department-of-social-protection/publications/prsi-class-a-rates/",
+      "lastVerified": "2026-10-30"
+    }
+  },
+  "emergency": {
+    "weeksWithBand": {
+      "value": 4,
+      "source": "https://www.revenue.ie/en/jobs-and-pensions/emergency-tax/emergency-tax-rules.aspx",
+      "lastVerified": "2026-10-30"
+    }
+  }
+}
